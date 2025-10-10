@@ -1,27 +1,30 @@
 #include <stdlib.h>
+#include "teams.c"
+
 enum tournament_type {
     rr, single_elim, double_elim
 };
 struct match {
-    int team_a;
-    int team_b;
+    team team_a;
+    team team_b;
 } typedef match;
 
 struct tournament {
-    int* teams;
+    team* teams;
     int no_of_teams;
     int format;
     match* matches;
     int no_of_matches;
 } typedef tournament;
 
-tournament create_tournament(int* teams, int no_of_teams, int format) {
+tournament create_tournament(team* teams, int no_of_teams, int format) {
     tournament t;
     t.format = format;
     t.no_of_teams = no_of_teams;
-    t.teams = malloc(sizeof(teams)*no_of_teams);
-    for(int i = 0; i < no_of_teams; i++) {
-        t.teams[i] = teams[i];
+    t.teams = teams;
+    int* rotator_tracker = malloc(sizeof(int)*no_of_teams);
+    for ( int i = 0; i < no_of_teams; i++) {
+        rotator_tracker[i] = i+1;
     }
     if(format == rr) {
         t.no_of_matches = (no_of_teams-1) * no_of_teams/2;
@@ -36,19 +39,37 @@ tournament create_tournament(int* teams, int no_of_teams, int format) {
                 //Also  i = 0, j = 0 -> Spieltag 1 Match 1. Match #1
                 //      i = 1, j = 4 -> Spieltag 2 Match 5. Match #10
                 //Das heißt das aktuelle Spielt ist nummer i * Spiele pro Spieltag + j
-                t.matches[i*(no_of_teams/2)+j].team_a = teams[2*j];
-                t.matches[i*(no_of_teams/2)+j].team_b = teams[2*j+1];
+
+                //Teams 1 und 2 müssen aus dem array mit der Menge an allen Teams herausgesucht werden
+                //Der rotator tracker bestimmt den status des drehen des teams für die round robin generation und bestimmt damit welches team an welche stelle gehört und aus dem array muss genau das eine team mit der ID, die der rotator tracker an dieser stelle hat gefunden werden
+                //find team 1
+                team tmp;
+                for(int t = 0; t < no_of_teams; t++) {
+                    if(teams[t].team_id == rotator_tracker[2*j]) {
+                        tmp = teams[t];
+                        break;
+                    }
+                }
+                t.matches[i*(no_of_teams/2)+j].team_a = tmp;
+                //find team 2
+                for(int t = 0; t < no_of_teams; t++) {
+                    if(teams[t].team_id == rotator_tracker[2*j+1]) {
+                        tmp = teams[t];
+                        break;
+                    }
+                }
+                t.matches[i*(no_of_teams/2)+j].team_b = tmp;
             }
             //nach jedem Spieltag werden alle teams rotiert, außer Team 1 -> erzeugt jede mögliche Paarung von n Teams in n-1 matches, wenn man Heim- und Auswärtsspiele als das Gleiche Match betrachtet
             //Das Team an erster Stelle wird vorgemerkt, danach werden alle anderen teams einen Platz nach vorn rotiert.
             //genau im letzten Schritt wird das vorgemerkte Team hinten neu angestellt
-            int tmp = teams[1];
+            int tmp = rotator_tracker[1];
             for(int i = 1; i < no_of_teams; i++) {
                 if((i+1) == no_of_teams) {
-                    teams[i] = tmp;
+                    rotator_tracker[i] = tmp;
                     break;
                 }
-                teams[i] = teams[i+1]; 
+                rotator_tracker[i] = rotator_tracker[i+1]; 
             }
         }
     }
