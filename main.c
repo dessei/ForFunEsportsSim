@@ -1,8 +1,11 @@
+#include <stdlib.h>
+#include <time.h>
 #include <stdio.h>
 #include "tournament.c"
 #define NUMBER_OF_TEAMS 4
 
 int main() {
+    srand(time(NULL));
     team* my_arr = malloc(sizeof(team)*NUMBER_OF_TEAMS);
     for (int i = 0; i < NUMBER_OF_TEAMS; i++) {
         my_arr[i].team_id = i+1;

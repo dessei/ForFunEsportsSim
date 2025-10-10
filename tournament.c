@@ -41,7 +41,7 @@ tournament create_tournament(team* teams, int no_of_teams, int format) {
                 //Das heißt das aktuelle Spielt ist nummer i * Spiele pro Spieltag + j
 
                 //Teams 1 und 2 müssen aus dem array mit der Menge an allen Teams herausgesucht werden
-                //Der rotator tracker bestimmt den status des drehen des teams für die round robin generation und bestimmt damit welches team an welche stelle gehört und aus dem array muss genau das eine team mit der ID, die der rotator tracker an dieser stelle hat gefunden werden
+                //Der rotator tracker bestimmt den status des "Drehens" des teams für die round robin generation und bestimmt damit welches team an welche stelle gehört und aus dem array muss genau das eine team mit der ID, die der rotator tracker an dieser stelle hat gefunden werden
                 //find team 1
                 team tmp;
                 for(int t = 0; t < no_of_teams; t++) {
@@ -59,6 +59,18 @@ tournament create_tournament(team* teams, int no_of_teams, int format) {
                     }
                 }
                 t.matches[i*(no_of_teams/2)+j].team_b = tmp;
+                
+                //because of the way the round robin bracket is generated here the team at position 0 in the "teams" array will always be on the left side of the fixture
+                //to have the bracket look a bit more natural it will be randomly swapped right in 50% of the matches
+                if(j == 0) {
+                    int decider = rand() % 100;
+                    printf("%d\n", decider);
+                    if(decider > 50) {
+                        team swapper = t.matches[i * (no_of_teams/2)].team_a;
+                        t.matches[i * no_of_teams/2].team_a = t.matches[i * (no_of_teams/2)].team_b;
+                        t.matches[i * (no_of_teams/2)].team_b = swapper;
+                    }
+                }
             }
             //nach jedem Spieltag werden alle teams rotiert, außer Team 1 -> erzeugt jede mögliche Paarung von n Teams in n-1 matches, wenn man Heim- und Auswärtsspiele als das Gleiche Match betrachtet
             //Das Team an erster Stelle wird vorgemerkt, danach werden alle anderen teams einen Platz nach vorn rotiert.
