@@ -29,6 +29,7 @@ struct tournament {
 } typedef tournament;
 
 void play_match(match* m);
+void print_table(tournament t);
 
 tournament create_tournament(team* teams, int no_of_teams, int format, int best_of_what) {
     tournament t;
@@ -128,14 +129,15 @@ void play_tournament(tournament t){
         printf("Match #%d, %s vs. %s\n", i+1, t.matches[i].team_a->name, t.matches[i].team_b->name);
         sleep(1);
         play_match(&t.matches[i]);
-        for(int j = 0; j < t.matches[i].series_ended_after_game+1; j++)  {
+        for(int j = 0; j < t.matches[i].series_ended_after_game; j++)  {
             if(t.matches[i].games[j].result == game_team_a) {
-                printf("Game %d has been won by %s.\n", i+1, t.matches[i].team_a->name);
+                printf("Game %d has been won by %s.\n", j+1, t.matches[i].team_a->name);
             } else {
-                printf("Game %d has been won by %s.\n", i+1, t.matches[i].team_b->name);
+                printf("Game %d has been won by %s.\n", j+1, t.matches[i].team_b->name);
             }
+            sleep(1);
         }
-        sleep(3);
+        sleep(2);
         team* winning_team;
         if(t.matches[i].series_winner == game_team_a) {
             winning_team = t.matches[i].team_a;            
@@ -148,8 +150,14 @@ void play_tournament(tournament t){
             winning_team->team_record.match_losses,
             winning_team->team_record.game_wins,
             winning_team->team_record.game_losses);
+        sleep(3);
+        if((i+1) % (t.no_of_teams/2) == 0) {
+            printf("Matchday over\n#########################\n");
+            print_table(t);
+            printf("#########################\n \n");
+        }
     }
-    sleep(3);
+    
 };
 
 void play_match(match* m) {
@@ -175,12 +183,14 @@ void play_match(match* m) {
             m->team_a->team_record.match_wins += 1;
             m->team_b->team_record.match_losses += 1;
             m->series_winner = game_team_a;
+            m->series_ended_after_game = score_a + score_b;
             break;
         }
         if(score_b > (m->no_of_games-1)/2) {
             m->team_a->team_record.match_losses += 1;
             m->team_b->team_record.match_wins += 1;
             m->series_winner = game_team_b;
+            m->series_ended_after_game = score_a + score_b;
             break;
         }
         
@@ -193,5 +203,72 @@ void free_tournament(tournament t) {
         free(t.matches[i].games);
     }
     free(t.matches);
+    return;
+}
+
+team* find_highest_ranked_team(tournament t, int* available_teams) {
+    //after every team played n games
+    //the teams can be compared and ordered by the amount of wins in games and series
+    int highest_points = -1;
+    int team_id = 0; //of the team with the most points
+    int current_points = 0;
+    for(int i = 0; i < t.no_of_teams;i++) {
+        if(available_teams[i] < 0) {
+            continue;
+        }
+        current_points = t.teams[i].team_record.match_wins;
+        //team with the highest points gets the highest seed
+        if (current_points > highest_points) {
+            team_id = t.teams[i].team_id;
+            highest_points = current_points;
+            continue;
+        }
+        //tie breaker rules
+        if (current_points == highest_points) {
+            //same match wins -> higher game wins gets the higher rank
+            if(t.teams[i].team_record.game_wins > t.teams[i-1].team_record.game_wins) {
+                team_id = t.teams[i].team_id;
+                continue;
+            }
+            if(t.teams[i].team_record.game_wins == t.teams[i-1].team_record.game_wins) {
+                //same match and game wins -> less losses gets the higher rank
+                if(t.teams[i].team_record.game_losses < t.teams[i].team_record.game_losses) {
+                    team_id = t.teams[i].team_id;
+                    continue;
+                }
+                //same match and game wins and same losses -> random decision (more tie breakers may be added later right now those are all the stats that teams have)
+                if(t.teams[i].team_record.game_losses == t.teams[i-1].team_record.game_losses) {
+                    if((rand() % 100) > 50) {
+                        team_id = t.teams[i].team_id;
+                    }
+                }
+            }
+        }
+    }
+    for(int i = 0; i < t.no_of_teams; i++) {
+        if(team_id == t.teams[i].team_id) {
+            return &t.teams[i];
+        }
+    }
+    return &t.teams[0];
+}
+
+void print_table(tournament t) {
+    int* teams = malloc(sizeof(int)*t.no_of_teams);
+    for(int i = 0; i < t.no_of_teams; i++) {
+        teams[i] = t.teams[i].team_id;
+    }
+    printf("TEAM          | WINS | LOSSES |\n");
+    team* cur_team;
+    for(int i = 0; i < t.no_of_teams; i++) {
+        cur_team = find_highest_ranked_team(t, teams);
+        for(int j = 0; j < t.no_of_teams; j++) { 
+            if(teams[j] == cur_team->team_id) {
+                teams[j] = -1;
+            }
+        }
+        printf("%14s| %4d | %6d\n",cur_team->name,cur_team->team_record.match_wins,cur_team->team_record.match_losses);
+    }
+    free(teams);
     return;
 }
