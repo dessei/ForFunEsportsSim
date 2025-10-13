@@ -2,7 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 #include "tournament.c"
-#define NUMBER_OF_TEAMS 4
+#define NUMBER_OF_TEAMS 6
 
 int main() {
     srand(time(NULL));
@@ -15,6 +15,8 @@ int main() {
     my_arr[1].name = "Fnatic"; my_arr[1].short_name = "FNC"; 
     my_arr[2].name = "Movistar KOI"; my_arr[2].short_name = "MKOI";
     my_arr[3].name = "Karmine Corp"; my_arr[3].short_name = "KC";
+    my_arr[4].name = "SK Gaming"; my_arr[4].short_name = "SK";
+    my_arr[5].name = "Natus Vincere"; my_arr[5].short_name = "NAVI";
     printf("test\n");
     tournament t = create_tournament(my_arr, NUMBER_OF_TEAMS, rr, bo3);
     printf("test\n");

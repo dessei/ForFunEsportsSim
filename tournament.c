@@ -258,7 +258,7 @@ void print_table(tournament t) {
     for(int i = 0; i < t.no_of_teams; i++) {
         teams[i] = t.teams[i].team_id;
     }
-    printf("TEAM          | WINS | LOSSES |\n");
+    printf("TEAM          | WINS | LOSSES | G_WINS |\n");
     team* cur_team;
     for(int i = 0; i < t.no_of_teams; i++) {
         cur_team = find_highest_ranked_team(t, teams);
@@ -267,7 +267,7 @@ void print_table(tournament t) {
                 teams[j] = -1;
             }
         }
-        printf("%14s| %4d | %6d\n",cur_team->name,cur_team->team_record.match_wins,cur_team->team_record.match_losses);
+        printf("%14s| %4d | %6d | %6d |\n",cur_team->name,cur_team->team_record.match_wins,cur_team->team_record.match_losses,cur_team->team_record.game_wins);
     }
     free(teams);
     return;
