@@ -211,7 +211,7 @@ team* find_highest_ranked_team(tournament t, int* available_teams) {
     //the teams can be compared and ordered by the amount of wins in games and series
     int highest_points = -1;
     int team_id = 0; //of the team with the most points
-    int current_points = 0;
+    int current_points = -1;
     for(int i = 0; i < t.no_of_teams;i++) {
         if(available_teams[i] < 0) {
             continue;
@@ -226,18 +226,23 @@ team* find_highest_ranked_team(tournament t, int* available_teams) {
         //tie breaker rules
         if (current_points == highest_points) {
             //same match wins -> higher game wins gets the higher rank
-            if(t.teams[i].team_record.game_wins > t.teams[i-1].team_record.game_wins) {
+            //find team with highest points
+            team comp_team;
+            for(int i = 0; i < t.no_of_teams; i++) {
+                if(t.teams[i].team_id == team_id) comp_team = t.teams[i];
+            }
+            if(t.teams[i].team_record.game_wins > comp_team.team_record.game_wins) {
                 team_id = t.teams[i].team_id;
                 continue;
             }
-            if(t.teams[i].team_record.game_wins == t.teams[i-1].team_record.game_wins) {
+            if(t.teams[i].team_record.game_wins == comp_team.team_record.game_wins) {
                 //same match and game wins -> less losses gets the higher rank
-                if(t.teams[i].team_record.game_losses < t.teams[i].team_record.game_losses) {
+                if(t.teams[i].team_record.game_losses < comp_team.team_record.game_losses) {
                     team_id = t.teams[i].team_id;
                     continue;
                 }
                 //same match and game wins and same losses -> random decision (more tie breakers may be added later right now those are all the stats that teams have)
-                if(t.teams[i].team_record.game_losses == t.teams[i-1].team_record.game_losses) {
+                if(t.teams[i].team_record.game_losses == comp_team.team_record.game_losses) {
                     if((rand() % 100) > 50) {
                         team_id = t.teams[i].team_id;
                     }
