@@ -1,7 +1,16 @@
 #include <stdlib.h>
+#ifndef uni
+#define uni
 #include <unistd.h>
+#endif
+#ifndef team_c
 #include "teams.c"
+#define team_c
+#endif
+#ifndef games_c
+#define games_c
 #include "games.c"
+#endif
 
 enum tournament_type {
     rr, single_elim, double_elim
@@ -20,6 +29,68 @@ struct match {
     unsigned int series_ended_after_game;
 } typedef match;
 
+//Tree node and tree used for Single elimination tournaments
+struct match_tree_node {
+    struct match_tree_node *parent;
+    match *match;
+    struct match_tree_node *leaf_l;
+    struct match_tree_node *leaf_r;
+    int amount_l;
+    int amount_r;
+} typedef match_tree_node;
+
+match_tree_node* create_tree(match* m) {
+    match_tree_node* t = malloc(sizeof(match_tree_node));
+    t->leaf_l = NULL;
+    t->leaf_r = NULL;
+    t->match = m;
+    t->amount_l = 0;
+    t->amount_r = 0;
+    t->parent = NULL;
+    return t;
+}
+void add_node (match* m, match_tree_node* add_to) {
+    printf("add node reached\n");
+    match_tree_node* cur_node = add_to;
+    int add_position = -1; //0 for right | 1 for left 
+    while((cur_node->amount_l+cur_node->amount_r) != 0) {
+        if(cur_node->parent == NULL) {
+            cur_node->amount_l += 1;
+            break;
+        }
+        if(cur_node->amount_l > cur_node->amount_r) {
+            cur_node->amount_r += 1;
+            cur_node = cur_node->leaf_r;
+            add_position = 1;
+        } else {
+            cur_node->amount_l += 1;
+            cur_node = cur_node->leaf_l;
+            add_position = 0;
+        }
+    }
+    printf("%d\n", add_position);
+    if(add_position == 0 || add_position == -1) {
+        printf("added l\n");
+        cur_node->leaf_l = malloc(sizeof(match_tree_node));
+        cur_node->leaf_l->parent = cur_node;
+        cur_node->leaf_l->amount_l = 0;
+        cur_node->leaf_l->amount_r = 0;
+        cur_node->leaf_l->leaf_l = NULL;
+        cur_node->leaf_l->leaf_r = NULL;
+        cur_node->leaf_l->match = m;
+    } else {
+        printf("added r\n");
+        cur_node->leaf_r = malloc(sizeof(match_tree_node));
+        cur_node->amount_r +=1;
+        cur_node->leaf_r->parent = cur_node;
+        cur_node->leaf_r->amount_l = 0;
+        cur_node->leaf_r->amount_r = 0;
+        cur_node->leaf_r->leaf_l = NULL;
+        cur_node->leaf_r->leaf_r = NULL;
+        cur_node->leaf_r->match = m;
+    }
+}
+
 struct tournament {
     team* teams;
     int no_of_teams;
@@ -36,6 +107,8 @@ tournament create_tournament(team* teams, int no_of_teams, int format, int best_
     t.format = format;
     t.no_of_teams = no_of_teams;
     t.teams = teams;
+    //Round Robin
+    //####################################################
     int* rotator_tracker = malloc(sizeof(int)*no_of_teams);
     for ( int i = 0; i < no_of_teams; i++) {
         rotator_tracker[i] = i+1;
@@ -99,6 +172,22 @@ tournament create_tournament(team* teams, int no_of_teams, int format, int best_
             }
         }
     }
+    free(rotator_tracker);
+    //#######################################################
+    //Single Elimination
+    //#######################################################
+    if(format == single_elim) {
+        t.no_of_matches = t.no_of_teams-1;
+        t.matches = malloc(sizeof(match)*t.no_of_matches);
+        match_tree_node* match_tree = create_tree(&t.matches[t.no_of_matches-1]);
+        for(int i = t.no_of_matches-2; i > 0; i--) {
+            printf("test");
+            add_node(&t.matches[i], match_tree);
+            printf("%d\n",match_tree->amount_l);
+        }
+    }
+        
+
     int best_of = 1;
     switch(best_of_what) {
         case bo1:
@@ -120,7 +209,6 @@ tournament create_tournament(team* teams, int no_of_teams, int format, int best_
         t.matches[i].no_of_games = best_of;
         t.matches[i].games = malloc(sizeof(game) * best_of);
     }
-    free(rotator_tracker);
     return t;
 };
 

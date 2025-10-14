@@ -1,10 +1,22 @@
+#ifndef slib
+#define slib
 #include <stdlib.h>
+#endif
+#ifndef tim
 #include <time.h>
+#define tim
+#endif
+#ifndef io
+#define io
 #include <stdio.h>
+#endif 
+#ifndef tournament_c
+#define tournament_c
 #include "tournament.c"
+#endif
 #define NUMBER_OF_TEAMS 10
 
-int main() {
+int main() {    
     srand(time(NULL));
     team* my_arr = malloc(sizeof(team)*NUMBER_OF_TEAMS);
     for (int i = 0; i < NUMBER_OF_TEAMS; i++) {
@@ -22,10 +34,11 @@ int main() {
     my_arr[8].name = "GiantX"; my_arr[8].short_name = "GX";
     my_arr[9].name = "Team Vitality"; my_arr[9].short_name = "VIT";
     printf("test\n");
-    tournament t = create_tournament(my_arr, NUMBER_OF_TEAMS, rr, bo3);
+    tournament t = create_tournament(my_arr, NUMBER_OF_TEAMS, single_elim, bo3);
     printf("test\n");
-    play_tournament(t);
-    print_table(t);
+    printf("test\n");
+    //play_tournament(t);
+    //print_table(t);
     free_tournament(t);
     return 0;
 }
