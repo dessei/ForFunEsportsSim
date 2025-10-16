@@ -31,63 +31,39 @@ struct match {
 
 //Tree node and tree used for Single elimination tournaments
 struct match_tree_node {
-    struct match_tree_node *parent;
-    match *match;
-    struct match_tree_node *leaf_l;
-    struct match_tree_node *leaf_r;
-    int amount_l;
-    int amount_r;
+    match* match;
+    struct match_tree_node* left;
+    struct match_tree_node* right;
+    struct match_tree_node* parent;
 } typedef match_tree_node;
 
-match_tree_node* create_tree(match* m) {
+match_tree_node* create_node(match* m) {
     match_tree_node* t = malloc(sizeof(match_tree_node));
-    t->leaf_l = NULL;
-    t->leaf_r = NULL;
     t->match = m;
-    t->amount_l = 0;
-    t->amount_r = 0;
-    t->parent = NULL;
+    t->left = NULL;
+    t->right = NULL;
     return t;
 }
-void add_node (match* m, match_tree_node* add_to) {
-    printf("add node reached\n");
-    match_tree_node* cur_node = add_to;
-    int add_position = -1; //0 for right | 1 for left 
-    while((cur_node->amount_l+cur_node->amount_r) != 0) {
-        if(cur_node->parent == NULL) {
-            cur_node->amount_l += 1;
+
+void add_node(match_tree_node* root, match* m) {
+    int found = 0;
+    while(!found) {
+        if(root->left == NULL) {
+            found = 1;
+            root->left = create_node(m);
+            root->left->parent = root;
+            break;
+        } else if(root->right == NULL) {
+            found = 1;
+            root->right = create_node(m);
+            root->right->parent = root;
             break;
         }
-        if(cur_node->amount_l > cur_node->amount_r) {
-            cur_node->amount_r += 1;
-            cur_node = cur_node->leaf_r;
-            add_position = 1;
+        if(root->left->left == NULL || root->left->right == NULL) {
+            root = root->left;
         } else {
-            cur_node->amount_l += 1;
-            cur_node = cur_node->leaf_l;
-            add_position = 0;
+            root = root->right;
         }
-    }
-    printf("%d\n", add_position);
-    if(add_position == 0 || add_position == -1) {
-        printf("added l\n");
-        cur_node->leaf_l = malloc(sizeof(match_tree_node));
-        cur_node->leaf_l->parent = cur_node;
-        cur_node->leaf_l->amount_l = 0;
-        cur_node->leaf_l->amount_r = 0;
-        cur_node->leaf_l->leaf_l = NULL;
-        cur_node->leaf_l->leaf_r = NULL;
-        cur_node->leaf_l->match = m;
-    } else {
-        printf("added r\n");
-        cur_node->leaf_r = malloc(sizeof(match_tree_node));
-        cur_node->amount_r +=1;
-        cur_node->leaf_r->parent = cur_node;
-        cur_node->leaf_r->amount_l = 0;
-        cur_node->leaf_r->amount_r = 0;
-        cur_node->leaf_r->leaf_l = NULL;
-        cur_node->leaf_r->leaf_r = NULL;
-        cur_node->leaf_r->match = m;
     }
 }
 
@@ -177,13 +153,15 @@ tournament create_tournament(team* teams, int no_of_teams, int format, int best_
     //Single Elimination
     //#######################################################
     if(format == single_elim) {
-        t.no_of_matches = t.no_of_teams-1;
-        t.matches = malloc(sizeof(match)*t.no_of_matches);
-        match_tree_node* match_tree = create_tree(&t.matches[t.no_of_matches-1]);
-        for(int i = t.no_of_matches-2; i > 0; i--) {
-            printf("test");
-            add_node(&t.matches[i], match_tree);
-            printf("%d\n",match_tree->amount_l);
+        t.matches = malloc(no_of_teams-1);
+        t.no_of_matches = no_of_teams-1;
+        match_tree_node* tree = create_node(&t.matches[no_of_teams-1]);
+        for(int i = no_of_teams-2; i >= 0; i--) {
+            add_node(tree, &t.matches[i]);   
+        }
+        for(int i = 0; i < no_of_teams/2; i++) {
+            t.matches[i].team_a = &teams[2*i];
+            t.matches[i].team_b = &teams[2*i+1];
         }
     }
         

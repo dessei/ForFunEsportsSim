@@ -36,7 +36,6 @@ int main() {
     printf("test\n");
     tournament t = create_tournament(my_arr, NUMBER_OF_TEAMS, single_elim, bo3);
     printf("test\n");
-    printf("test\n");
     //play_tournament(t);
     //print_table(t);
     free_tournament(t);
