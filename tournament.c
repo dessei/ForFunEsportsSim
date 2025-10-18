@@ -27,48 +27,7 @@ struct match {
     unsigned int no_of_games;
     game* games;
     unsigned int series_ended_after_game;
-    struct match* parent;
 } typedef match;
-
-//Tree node and tree used for Single elimination tournaments
-struct match_tree_node {
-    match* match;
-    struct match_tree_node* left;
-    struct match_tree_node* right;
-    struct match_tree_node* parent;
-} typedef match_tree_node;
-
-match_tree_node* create_node(match* m) {
-    match_tree_node* t = malloc(sizeof(match_tree_node));
-    t->match = m;
-    t->left = NULL;
-    t->right = NULL;
-    return t;
-}
-
-void add_node(match_tree_node* root, match* m) {
-    int found = 0;
-    while(!found) {
-        if(root->left == NULL) {
-            found = 1;
-            root->left = create_node(m);
-            root->left->match->parent = root->match;
-            root->left->parent = root;
-            break;
-        } else if(root->right == NULL) {
-            found = 1;
-            root->right = create_node(m);
-            root->right->match->parent = root->match;
-            root->right->parent = root;
-            break;
-        }
-        if(root->left->left == NULL || root->left->right == NULL) {
-            root = root->left;
-        } else {
-            root = root->right;
-        }
-    }
-}
 
 struct tournament {
     team* teams;
@@ -156,15 +115,26 @@ tournament create_tournament(team* teams, int no_of_teams, int format, int best_
     //Single Elimination
     //#######################################################
     if(format == single_elim) {
-        t.matches = malloc(sizeof(match)*(no_of_teams-1));
-        t.no_of_matches = no_of_teams-1;
-        match_tree_node* tree = create_node(&t.matches[no_of_teams-1]);
-        for(int i = no_of_teams-2; i >= 0; i--) {
-            add_node(tree, &t.matches[i]);
-            if(i < no_of_teams/2) {
-                t.matches[i].team_a = &teams[2*i];
-                t.matches[i].team_b = &teams[2*i+1];
-            }   
+        int tmp = no_of_teams;
+        while(tmp%2 == 0) {
+            tmp = tmp/2;
+        }
+        //adding BYEs to the bracket when the numbers of teams isn't 2 to the power of n
+        if(tmp != 1) {
+            tmp = 1;
+            while(tmp < no_of_teams) {
+                tmp = tmp * 2;
+            }
+            t.no_of_teams = tmp;
+        }
+        t.matches = malloc(sizeof(match)*(t.no_of_teams-1));
+        t.no_of_matches = t.no_of_teams-1;
+        for(int i = 0; i < t.no_of_teams/2; i++) {
+            t.matches[i].team_a = &teams[i];
+            if(t.no_of_teams-i-1 >= no_of_teams) {
+                continue; 
+            }
+            t.matches[i].team_b = &teams[t.no_of_teams-i-1];
         }
     //#######################################################
     //Double Elimination
@@ -239,6 +209,7 @@ void play_tournament(tournament t) {
     if(t.format == rr) {
         play_rr_tournament(t);
     } else if (t.format == single_elim) {
+        int no_of_teams_left = t.no_of_teams;
         for(int i = 0; i < t.no_of_matches; i++) {
             if(i == t.no_of_matches-1) {
                 printf("ITS FINALS TIME\n");
@@ -247,9 +218,15 @@ void play_tournament(tournament t) {
             } else if ((i < t.no_of_matches-3) && (i > t.no_of_matches-8)) {
                 printf("ITS QUARTERFINALS TIME\n");
             }
-            printf("Match #%d, %s vs. %s\n", i+1, t.matches[i].team_a->name, t.matches[i].team_b->name);
+            if(!t.matches[i].team_b) {
+                printf("Match #%d, Because the number of teams isn't exactly 2^n. %s gets a BYE\n", i+1, t.matches[i].team_a->name);
+            } else {
+                printf("Match #%d, %s vs. %s\n", i+1, t.matches[i].team_a->name, t.matches[i].team_b->name);
+            }
             sleep(1);
+            printf("play match reached\n");
             play_match(&t.matches[i]);
+            printf("Match played\n");
             for(int j = 0; j < t.matches[i].series_ended_after_game; j++)  {
                 if(t.matches[i].games[j].result == game_team_a) {
                     printf("Game %d has been won by %s.\n", j+1, t.matches[i].team_a->name);
@@ -265,11 +242,12 @@ void play_tournament(tournament t) {
                 winning_team = t.matches[i].team_b;
             }
             printf("The series has been won by %s.\n They will move on to the next round.\n \n", winning_team->name);
-            if(!(t.matches[i].parent->team_a)) {
-                t.matches[i].parent->team_a = winning_team;
+            if(!t.matches[i+no_of_teams_left/2].team_a) {
+                t.matches[i+no_of_teams_left/2].team_a = winning_team;
             } else {
-                t.matches[i].parent->team_b = winning_team;
+                t.matches[i+no_of_teams_left/2].team_b = winning_team;
             }
+            no_of_teams_left = no_of_teams_left-1;
             sleep(2);        
         }
     } else if (t.format == double_elim) {
@@ -282,6 +260,10 @@ void play_match(match* m) {
     unsigned int score_b = 0;
     //placeholder way of doing it
     //TODO more detailed simulation of game states 
+    if(!m->team_b) {
+        m->series_winner = game_team_a;
+        return;
+    }
     for(int i = 0; i < m->no_of_games; i++) {
         m->games[i].match_score = rand() % 100;
         if(m->games[i].match_score> 50) {

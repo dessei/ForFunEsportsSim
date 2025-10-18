@@ -14,7 +14,7 @@
 #define tournament_c
 #include "tournament.c"
 #endif
-#define NUMBER_OF_TEAMS 8
+#define NUMBER_OF_TEAMS 9
 
 int main() {    
     srand(time(NULL));
@@ -31,10 +31,11 @@ int main() {
     my_arr[5].name = "Natus Vincere"; my_arr[5].short_name = "NAVI";
     my_arr[6].name = "BDS esports"; my_arr[6].short_name = "BDS";
     my_arr[7].name = "Team Heretics"; my_arr[7].short_name = "TH";
-    //my_arr[8].name = "GiantX"; my_arr[8].short_name = "GX";
+    my_arr[8].name = "GiantX"; my_arr[8].short_name = "GX";
     //my_arr[9].name = "Team Vitality"; my_arr[9].short_name = "VIT";
     printf("test\n");
     tournament t = create_tournament(my_arr, NUMBER_OF_TEAMS, single_elim, bo3);
+    printf("tournament created\n");
     play_tournament(t);
     //print_table(t);
     free_tournament(t);
